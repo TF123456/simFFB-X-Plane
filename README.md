@@ -24,7 +24,7 @@ You can then fly and experience trimming forces, ground bumps, landing bumps and
 
 At the bottom of the UI you can see the control surface deflections and trim status (+- 100).
 
-You can either use the hat control of your joystick or (as the author prefers) it will respond to pressing / holding the arrow keys on your keyboard. Be sure to unbind these in X-Plane.
+You can either use the hat control of your joystick or (as the author prefers) it will respond to pressing / holding the arrow keys on your keyboard. Be sure to unbind these in X-Plane. To use the hat control you'll need to select "Progressive" or "Both" and have selected the joystick you want to use.
 
 There is also a button to reset the trim back to zero.
 
