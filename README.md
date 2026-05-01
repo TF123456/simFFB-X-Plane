@@ -2,7 +2,7 @@
 ![simFFB](https://raw.githubusercontent.com/TF123456/simFFB-X-Plane/refs/heads/master/simffb_pic.png)
 
 ### Description
-simFFB is an invaluable utility that provides joystick force feedback effects beyond those typically offered in games. simFFB was forked and X-Plane telemetry was added so that control surface position, airspeed, ground, stall warning, gear deflection and vvi are used to derive the stick forces
+simFFB is an invaluable utility that provides joystick force feedback effects beyond those typically offered in games. simFFB was forked and X-Plane telemetry was added so that control surface position, airspeed, ground, stall warning, gear deflection and vvi are used to derive the stick forces.
 
 See https://github.com/joeyjojojunior/simFFB for the code that this was forked from.
 
