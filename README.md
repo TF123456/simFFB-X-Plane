@@ -7,7 +7,11 @@ simFFB is an invaluable utility that provides joystick force feedback effects be
 See https://github.com/joeyjojojunior/simFFB for the code that this was forked from.
 
 ### To use it
+Download the app from Releases (https://github.com/TF123456/simFFB-X-Plane/releases) then unzip it.
+
 Load the app and select your joystick in both dropdowns.
+
+Check the X-Plane box when ready to connect to X-Plane.
 
 Set:
 - spring force to ~50%
@@ -25,3 +29,11 @@ You can either use the hat control of your joystick or (as the author prefers) i
 There is also a button to reset the trim back to zero.
 
 This has been tested with a Microsoft SideWinder Force Feedback 2 joystick in X-Plane 12.4/2-r2 using a Cessna 172. So far the work has taken one evening, so there may be issues and improvements that need to be made.
+
+### Build
+
+in Powershell:
+
+```
+& 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe' simFFB.sln /p:Configuration=Release
+```
