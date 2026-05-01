@@ -3,75 +3,117 @@
 #define DIRECTINPUT_VERSION 0x0800
 
 #include <dinput.h>
+#include "xplane.h"
 
-//#define FORCESPRING DI_FFNOMINALMAX
-//#define FORCEDAMPER DI_FFNOMINALMAX*0.7
-//#define FORCEFRICTI DI_FFNOMINALMAX*0.7
-#define TRIMSTEP    DI_FFNOMINALMAX*0.0125
+// #define FORCESPRING DI_FFNOMINALMAX
+// #define FORCEDAMPER DI_FFNOMINALMAX*0.7
+// #define FORCEFRICTI DI_FFNOMINALMAX*0.7
+#define TRIMSTEP DI_FFNOMINALMAX * 0.0125
 
 #define MAXSTICKS 32
 #define MAXBUTTONS 32
 extern BYTE g_bBoton[MAXBUTTONS];
 
-typedef struct _sticks {
+typedef struct _sticks
+{
     TCHAR name[MAX_PATH];
     LPDIRECTINPUTDEVICE8 dev;
 } sticks;
 
-typedef struct options {
-    int jtrim;          // joystick  
-    int jPOV;           // POV hat for progressive trimmer
-    int btrimHold;      // trim button (hold)
-    int btrimToggle;    // trim button (toggle)
-    int btrimCenter;    // trim button (center)
-    int spring;         // spring force 
-    int damper;         // dampering level (force trim on)
-    int friction;       // friction level (force trim on)
-    int spring2;        // spring force (force trim off)
-    int damper2;        // dampering level (force trim off)
-    int friction2;      // friction level (force trim off)
-    int iKey;           // key for reinitializing dinput
-    int iKeyMod[4];     // modifiers for init key - CTRL/ALT/SHIFT/WIN
-    int ctKey;          // key for cycling trim
-    int ctKeyMod[4];    // modifiers for cycle trim key - CTRL/ALT/SHIFT/WIN
-    int windowX;        // x-coordinate of last window position
-    int windowY;        // y-coordinate of last window position
-    byte swap;          // swap axes
-    byte trimmode;      // no trim - only instant - only progressive - both
-    byte g_bSpring;     // spring force status
+typedef struct options
+{
+    int jtrim;       // joystick
+    int jPOV;        // POV hat for progressive trimmer
+    int btrimHold;   // trim button (hold)
+    int btrimToggle; // trim button (toggle)
+    int btrimCenter; // trim button (center)
+    int spring;      // spring force
+    int damper;      // dampering level (force trim on)
+    int friction;    // friction level (force trim on)
+    int spring2;     // spring force (force trim off)
+    int damper2;     // dampering level (force trim off)
+    int friction2;   // friction level (force trim off)
+    int iKey;        // key for reinitializing dinput
+    int iKeyMod[4];  // modifiers for init key - CTRL/ALT/SHIFT/WIN
+    int ctKey;       // key for cycling trim
+    int ctKeyMod[4]; // modifiers for cycle trim key - CTRL/ALT/SHIFT/WIN
+    int windowX;     // x-coordinate of last window position
+    int windowY;     // y-coordinate of last window position
+    byte swap;       // swap axes
+    byte trimmode;   // no trim - only instant - only progressive - both
+    byte g_bSpring;  // spring force status
+    // X-Plane integration (appended — bump MAGICNUMBER if changing above fields)
+    char xplaneIP[64]; // X-Plane host, default "127.0.0.1"
+    int xplanePort;    // X-Plane UDP port, default 49000
+    int shakerGain;    // stick shaker magnitude 0-100
+    int bumpGain;      // ground bump magnitude 0-100
+    byte xplaneMode;   // 0=manual, 1=X-Plane driven
 } stoptions;
 
 //-----------------------------------------------------------------------------
-// Function prototypes 
+// Function prototypes
 //-----------------------------------------------------------------------------
 HRESULT InitDirectInput(HWND);
-VOID    FreeDirectInput();
+VOID FreeDirectInput();
 
 HRESULT Adquirir();
 void StartEffects();
 void StopEffects();
 void JoystickStuffPT();
+void ApplyArrowKeyTrim();
 void JoystickStuffIT();
 void InstantTrim();
 void CenterTrim(); // Centers joystick & turns on spring
 int JoysticksNumber();
 LPCTSTR JoystickName(int);
-void SetTrimmer(int,int,int,int,int);
-void GetTrimmer(int&,int&,int&,int&,int&);
+void SetTrimmer(int, int, int, int, int);
+void GetTrimmer(int &, int &, int &, int &, int &);
 void SetJtOptions(stoptions *);
 void GetJtOptions(stoptions *);
 BOOL LoadOptionsFromFile();
 
+// X-Plane FFB
+void ApplyXPlaneTelemetry(const XPlaneTelemetry &t);
+void SetShakerActive(bool on, int gain);
+void SetBumpActive(bool on, int gain);
+void GetXPlaneForces(INT &aeroY, INT &aeroX, INT &trimY, INT &trimX, INT &effTrimY, INT &effTrimX);
+void ResetTrim();
+
+extern float g_xplaneSpeedScale;
 
 //-----------------------------------------------------------------------------
 // Defines, constants, and global variables
 //-----------------------------------------------------------------------------
-#define SAFE_DELETE(p)  { if(p) { delete (p);     (p)=NULL; } }
-#define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
+#define SAFE_DELETE(p)  \
+    {                   \
+        if (p)          \
+        {               \
+            delete (p); \
+            (p) = NULL; \
+        }               \
+    }
+#define SAFE_RELEASE(p)     \
+    {                       \
+        if (p)              \
+        {                   \
+            (p)->Release(); \
+            (p) = NULL;     \
+        }                   \
+    }
 
-#define ADDLIM(a,b,l) {a+=(INT)(b); if (a>l) a=l;}  //addition with upper limit
-#define SUBLIM(a,b,l) {a-=(INT)(b); if (a<l) a=l;}  //substraction with bottom limit
-#define UP    0
+#define ADDLIM(a, b, l) \
+    {                   \
+        a += (INT)(b);  \
+        if (a > l)      \
+            a = l;      \
+    } // addition with upper limit
+#define SUBLIM(a, b, l) \
+    {                   \
+        a -= (INT)(b);  \
+        if (a < l)      \
+            a = l;      \
+    } // substraction with bottom limit
+#define UP 0
 #define DOWN 1
 #define RELEASED 2
 #define CENTER_DAMP_COEFF 1.5
