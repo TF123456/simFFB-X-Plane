@@ -11,6 +11,7 @@ struct XPlaneTelemetry {
     float ail_deflection;      // sim/flightmodel2/wing/aileron1_deg[0] (degrees)
     float tire_vrt_def[3];     // sim/flightmodel/parts/tire_vrt_def_veh[0..2] (metres)
     float vvi_fpm;             // sim/cockpit2/gauges/indicators/vvi_fpm_pilot (ft/min)
+    float ground_speed_ms;     // sim/flightmodel/position/groundspeed (m/s)
     bool  connected;
 };
 

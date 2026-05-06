@@ -6,7 +6,7 @@
 #include <algorithm>
 
 #define OPTFILENAME _T("opt.dat") // File name where settings are saved
-#define MAGICNUMBER 145011980     // Bumped: removed ffbGain field
+#define MAGICNUMBER 145011981     // Bumped: added rollGain field
 
 LPDIRECTINPUT8 g_pDI = NULL;
 LPDIRECTINPUTDEVICE8 g_pFFDevice = NULL;
@@ -21,6 +21,7 @@ LPDIRECTINPUTEFFECT g_pEffectFricti2 = NULL;
 
 LPDIRECTINPUTEFFECT g_pEffectShaker = NULL;
 LPDIRECTINPUTEFFECT g_pEffectBump = NULL;
+LPDIRECTINPUTEFFECT g_pEffectRoll = NULL;
 
 float g_xplaneSpeedScale = 1.0f;
 static INT g_xplaneAeroY = 0; // IAS-scaled elevator deflection, combined with g_nYForce in spring
@@ -45,8 +46,8 @@ stoptions g_Opt = {
     0,            // trim button (toggle)
     0,            // trim button (center)
     5000,         // spring force
-    0000,         // dampering level (force trim on)
-    0,            // friction level (force trim on)
+    3000,         // dampering level (force trim on)
+    2000,         // friction level (force trim on)
     0,            // spring force 2
     5000,         // dampering level (force trim off)
     0,            // friction level (force trim off)
@@ -63,6 +64,7 @@ stoptions g_Opt = {
     49000,        // xplanePort
     20,           // shakerGain
     20,           // bumpGain
+    13,           // rollGain
     0,            // xplaneMode
 };
 
@@ -402,6 +404,11 @@ HRESULT InitDirectInput(HWND hCon)
     g_pFFDevice->CreateEffect(GUID_Sine, &eff, &g_pEffectBump, NULL);
     printf("[DI] CreateEffect(Bump/Sine) g_pEffectBump=%p\n", g_pEffectBump);
 
+    // Roll effect: sine wave, magnitude=0, period set dynamically from ground speed
+    per.dwPeriod = 200000; // default 5 Hz placeholder
+    g_pFFDevice->CreateEffect(GUID_Sine, &eff, &g_pEffectRoll, NULL);
+    printf("[DI] CreateEffect(Roll/Sine) g_pEffectRoll=%p\n", g_pEffectRoll);
+
     printf("[DI] InitDirectInput complete\n");
     return S_OK;
 }
@@ -489,6 +496,7 @@ VOID FreeDirectInput()
     SAFE_RELEASE(g_pEffectFricti2);
     SAFE_RELEASE(g_pEffectShaker);
     SAFE_RELEASE(g_pEffectBump);
+    SAFE_RELEASE(g_pEffectRoll);
 
     for (int i = 0; i < g_iNsticks; i++)
         SAFE_RELEASE(g_Sticks[i].dev);
@@ -1100,6 +1108,7 @@ void SetJtOptions(stoptions *so)
     g_Opt.xplanePort = so->xplanePort;
     g_Opt.shakerGain = so->shakerGain;
     g_Opt.bumpGain = so->bumpGain;
+    g_Opt.rollGain = so->rollGain;
     g_Opt.xplaneMode = so->xplaneMode;
 
     SetDeviceConditions();
@@ -1132,6 +1141,7 @@ void GetJtOptions(stoptions *so)
     so->xplanePort = g_Opt.xplanePort;
     so->shakerGain = g_Opt.shakerGain;
     so->bumpGain = g_Opt.bumpGain;
+    so->rollGain = g_Opt.rollGain;
     so->xplaneMode = g_Opt.xplaneMode;
 }
 
@@ -1273,6 +1283,8 @@ void ApplyXPlaneTelemetry(const XPlaneTelemetry &t)
         if (s_bumpFrames > 0)
             s_bumpFrames--;
 
+        SetRollActive(onGround, t.ground_speed_ms);
+
         s_prevFpm = t.vvi_fpm;
         s_wasOnGround = onGround;
     }
@@ -1366,4 +1378,36 @@ void SetBumpActive(bool on, int gain)
         g_pEffectBump->Start(1, 0);
     else
         g_pEffectBump->Stop();
+}
+
+void SetRollActive(bool on, float groundspeed_ms)
+{
+    if (!g_pEffectRoll)
+        return;
+
+    DIPERIODIC per;
+    ZeroMemory(&per, sizeof(per));
+
+    if (on && groundspeed_ms > 0.1f)
+    {
+        // Higher ground speed → shorter period (higher frequency)
+        DWORD period_us = (DWORD)(2000000.0f / groundspeed_ms);
+        period_us = max(10000u, min(500000u, period_us));
+        per.dwMagnitude = (DWORD)(g_Opt.rollGain * 100);
+        per.dwPeriod = period_us;
+    }
+    // else magnitude and period stay 0
+
+    DIEFFECT eff;
+    ZeroMemory(&eff, sizeof(eff));
+    eff.dwSize = sizeof(DIEFFECT);
+    eff.cbTypeSpecificParams = sizeof(DIPERIODIC);
+    eff.lpvTypeSpecificParams = &per;
+
+    g_pEffectRoll->SetParameters(&eff, DIEP_TYPESPECIFICPARAMS);
+
+    if (on && groundspeed_ms > 0.1f)
+        g_pEffectRoll->Start(1, 0);
+    else
+        g_pEffectRoll->Stop();
 }

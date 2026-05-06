@@ -56,8 +56,9 @@ static const DrefDef k_drefs[] = {
     {9, 30, "sim/flightmodel/parts/tire_vrt_def_veh[1]"},
     {10, 30, "sim/flightmodel/parts/tire_vrt_def_veh[2]"},
     {11, 30, "sim/cockpit2/gauges/indicators/vvi_fpm_pilot"},
+    {12, 30, "sim/flightmodel/position/groundspeed"},
 };
-static const int k_ndefs = 12;
+static const int k_ndefs = 13;
 
 static SOCKET g_sock = INVALID_SOCKET;
 static HANDLE g_thread = NULL;
@@ -151,6 +152,9 @@ static unsigned __stdcall ListenerThread(void *)
                 break;
             case 11:
                 g_tele.vvi_fpm = vals[i].value;
+                break;
+            case 12:
+                g_tele.ground_speed_ms = vals[i].value;
                 break;
             }
         }

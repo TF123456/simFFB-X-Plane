@@ -80,6 +80,8 @@ HWND hwndTBShakerGain;   // Shaker gain trackbar
 HWND hwndEBShakerGain;   // Shaker gain read-only edit
 HWND hwndTBBumpGain;     // Bump gain trackbar
 HWND hwndEBBumpGain;     // Bump gain read-only edit
+HWND hwndTBRollGain;     // Roll gain trackbar
+HWND hwndEBRollGain;     // Roll gain read-only edit
 
 BOOL g_xplaneStatusConnected = false; // tracks last shown status to avoid redraws
 HWND hwndLBElvDiag;                   // live elevator force readout
@@ -465,20 +467,27 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hwndEBXPlanePort = CreateWindow(_T("Edit"), _T("49000"), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_NUMBER, 248, 272, 50, 20, hWnd, NULL, hInstance, NULL);
     hwndLBXPlaneStatus = CreateWindow(_T("static"), _T("Disconnected"), WS_CHILD | WS_VISIBLE, 305, 272, 120, 20, hWnd, NULL, hInstance, NULL);
 
-    // X-Plane FFB row 2: shaker and bump gain sliders
-    CreateWindow(_T("static"), _T("Shaker\t%"), WS_CHILD | WS_VISIBLE, 3, 300, 60, 20, hWnd, NULL, hInstance, NULL);
-    hwndEBShakerGain = CreateWindow(_T("Edit"), _T("50"), WS_CHILD | WS_VISIBLE | ES_LEFT | ES_NUMBER | ES_READONLY, 65, 300, 30, 20, hWnd, NULL, hInstance, NULL);
-    hwndTBShakerGain = CreateWindow(TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_ENABLESELRANGE, 98, 300, 200, 20, hWnd, NULL, hInstance, NULL);
+    // X-Plane FFB row 2: shaker, bump, roll gain sliders (equal thirds)
+    CreateWindow(_T("static"), _T("Shaker"), WS_CHILD | WS_VISIBLE, 3, 300, 50, 20, hWnd, NULL, hInstance, NULL);
+    hwndEBShakerGain = CreateWindow(_T("Edit"), _T("50"), WS_CHILD | WS_VISIBLE | ES_LEFT | ES_NUMBER | ES_READONLY, 55, 300, 26, 20, hWnd, NULL, hInstance, NULL);
+    hwndTBShakerGain = CreateWindow(TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_ENABLESELRANGE, 83, 300, 97, 20, hWnd, NULL, hInstance, NULL);
     SendMessage(hwndTBShakerGain, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
     SendMessage(hwndTBShakerGain, TBM_SETPAGESIZE, 0, (LPARAM)1);
     SendMessage(hwndTBShakerGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)50);
 
-    CreateWindow(_T("static"), _T("Bump\t%"), WS_CHILD | WS_VISIBLE, 305, 300, 55, 20, hWnd, NULL, hInstance, NULL);
-    hwndEBBumpGain = CreateWindow(_T("Edit"), _T("30"), WS_CHILD | WS_VISIBLE | ES_LEFT | ES_NUMBER | ES_READONLY, 362, 300, 30, 20, hWnd, NULL, hInstance, NULL);
-    hwndTBBumpGain = CreateWindow(TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_ENABLESELRANGE, 395, 300, 140, 20, hWnd, NULL, hInstance, NULL);
+    CreateWindow(_T("static"), _T("Bump"), WS_CHILD | WS_VISIBLE, 183, 300, 50, 20, hWnd, NULL, hInstance, NULL);
+    hwndEBBumpGain = CreateWindow(_T("Edit"), _T("30"), WS_CHILD | WS_VISIBLE | ES_LEFT | ES_NUMBER | ES_READONLY, 235, 300, 26, 20, hWnd, NULL, hInstance, NULL);
+    hwndTBBumpGain = CreateWindow(TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_ENABLESELRANGE, 263, 300, 97, 20, hWnd, NULL, hInstance, NULL);
     SendMessage(hwndTBBumpGain, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
     SendMessage(hwndTBBumpGain, TBM_SETPAGESIZE, 0, (LPARAM)1);
     SendMessage(hwndTBBumpGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)30);
+
+    CreateWindow(_T("static"), _T("Roll"), WS_CHILD | WS_VISIBLE, 363, 300, 50, 20, hWnd, NULL, hInstance, NULL);
+    hwndEBRollGain = CreateWindow(_T("Edit"), _T("20"), WS_CHILD | WS_VISIBLE | ES_LEFT | ES_NUMBER | ES_READONLY, 415, 300, 26, 20, hWnd, NULL, hInstance, NULL);
+    hwndTBRollGain = CreateWindow(TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_ENABLESELRANGE, 443, 300, 92, 20, hWnd, NULL, hInstance, NULL);
+    SendMessage(hwndTBRollGain, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
+    SendMessage(hwndTBRollGain, TBM_SETPAGESIZE, 0, (LPARAM)1);
+    SendMessage(hwndTBRollGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)20);
 
     // X-Plane live force diagnostics
     CreateWindow(_T("static"), _T("Elev:"), WS_CHILD | WS_VISIBLE, 3, 330, 35, 18, hWnd, NULL, hInstance, NULL);
@@ -746,6 +755,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             delete[] tmp;
             SetJtOptions(&jopt);
         }
+        else if ((HWND)lParam == hwndTBRollGain)
+        {
+            jopt.rollGain = (int)SendMessage(hwndTBRollGain, TBM_GETPOS, 0, 0);
+            TCHAR *tmp = new TCHAR[11];
+            _stprintf_s(tmp, 11, _T("%i"), jopt.rollGain);
+            Edit_SetText(hwndEBRollGain, tmp);
+            delete[] tmp;
+            SetJtOptions(&jopt);
+        }
         SetFocus(g_hwnd);
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -907,13 +925,17 @@ void InitAll(BOOL firstrun)
 
         int sg = jopt.shakerGain > 0 ? jopt.shakerGain : 50;
         int bg = jopt.bumpGain > 0 ? jopt.bumpGain : 30;
+        int rg = jopt.rollGain > 0 ? jopt.rollGain : 20;
         SendMessage(hwndTBShakerGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)sg);
         SendMessage(hwndTBBumpGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)bg);
+        SendMessage(hwndTBRollGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)rg);
 
         _stprintf_s(tmp, 11, _T("%i"), sg);
         Edit_SetText(hwndEBShakerGain, tmp);
         _stprintf_s(tmp, 11, _T("%i"), bg);
         Edit_SetText(hwndEBBumpGain, tmp);
+        _stprintf_s(tmp, 11, _T("%i"), rg);
+        Edit_SetText(hwndEBRollGain, tmp);
 
         if (jopt.xplaneMode)
             StartXPlaneListener(jopt.xplaneIP, jopt.xplanePort > 0 ? jopt.xplanePort : 49000);

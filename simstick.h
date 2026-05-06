@@ -47,6 +47,7 @@ typedef struct options
     int xplanePort;    // X-Plane UDP port, default 49000
     int shakerGain;    // stick shaker magnitude 0-100
     int bumpGain;      // ground bump magnitude 0-100
+    int rollGain;      // ground roll vibration magnitude 0-100
     byte xplaneMode;   // 0=manual, 1=X-Plane driven
 } stoptions;
 
@@ -76,6 +77,7 @@ BOOL LoadOptionsFromFile();
 void ApplyXPlaneTelemetry(const XPlaneTelemetry &t);
 void SetShakerActive(bool on, int gain);
 void SetBumpActive(bool on, int gain);
+void SetRollActive(bool on, float groundspeed_ms);
 void GetXPlaneForces(INT &aeroY, INT &aeroX, INT &trimY, INT &trimX, INT &effTrimY, INT &effTrimX);
 void ResetTrim();
 
