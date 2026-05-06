@@ -21,6 +21,7 @@ Set:
 - Friction force to ~20%
 - Shaker force to ~20%
 - Bump force to ~50%
+- Roll force to ~13%
 
 You can then fly and experience trimming forces, ground bumps, landing bumps and stick shaker.
 
