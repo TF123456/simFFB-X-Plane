@@ -106,11 +106,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                        int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // AllocConsole();
-    // FILE *f;
-    // freopen_s(&f, "CONOUT$", "w", stdout);
+    if (_tcsstr(lpCmdLine, _T("--debug")) != NULL)
+    {
+        AllocConsole();
+        FILE *f;
+        freopen_s(&f, "CONOUT$", "w", stdout);
+        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+        DWORD consoleMode;
+        GetConsoleMode(hStdin, &consoleMode);
+        SetConsoleMode(hStdin, consoleMode & ~ENABLE_QUICK_EDIT_MODE);
+    }
 
     // TODO: Place code here.
     MSG msg;

@@ -134,32 +134,41 @@ HRESULT InitDirectInput(HWND hCon)
 
     // Register with the DirectInput subsystem and get a pointer
     // to a IDirectInput interface we can use.
+    printf("[DI] DirectInput8Create...\n");
     if (FAILED(hr = DirectInput8Create(GetModuleHandle(NULL), DIRECTINPUT_VERSION,
                                        IID_IDirectInput8, (VOID **)&g_pDI, NULL)))
     {
+        printf("[DI] DirectInput8Create FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] DirectInput8Create OK\n");
 
     // Look for a force feedback device we can use
+    printf("[DI] EnumDevices...\n");
     if (FAILED(hr = g_pDI->EnumDevices(DI8DEVCLASS_GAMECTRL,
                                        EnumFFDevicesCallback, NULL,
                                        DIEDFL_ATTACHEDONLY /*| DIEDFL_FORCEFEEDBACK*/)))
     {
+        printf("[DI] EnumDevices FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] EnumDevices done: g_iNsticks=%d, g_iFF=%d, g_pFFDevice=%p\n", g_iNsticks, g_iFF, g_pFFDevice);
 
     if (-1 == g_iNsticks)
     {
+        printf("[DI] No joystick found\n");
         MessageBox(NULL, _T("No Joystick found."),
                    _T("FFConst"), MB_ICONERROR | MB_OK);
         return S_OK;
     }
     if (g_pFFDevice == NULL)
     {
+        printf("[DI] No FFB joystick found\n");
         MessageBox(NULL, _T("No FFB Joystick found."),
                    _T("FFConst"), MB_ICONERROR | MB_OK);
         return S_OK;
     }
+    printf("[DI] FFB device: stick index %d\n", g_iFF);
 
     // Have to load options again since we finally polled for devices and have the list
     LoadOptionsFromFile();
@@ -175,7 +184,9 @@ HRESULT InitDirectInput(HWND hCon)
     for (int i = 0; i < g_iNsticks; i++)
     {
         hr = g_Sticks[i].dev->SetDataFormat(&c_dfDIJoystick2);
+        printf("[DI] stick[%d] SetDataFormat hr=0x%08X\n", i, hr);
         hr = g_Sticks[i].dev->SetCooperativeLevel(hCon, DISCL_EXCLUSIVE | DISCL_BACKGROUND);
+        printf("[DI] stick[%d] SetCooperativeLevel hr=0x%08X\n", i, hr);
     }
 
     // Since we will be playing force feedback effects, we should disable the
@@ -187,12 +198,20 @@ HRESULT InitDirectInput(HWND hCon)
     dipdw.dwData = FALSE;
 
     if (FAILED(hr = g_pFFDevice->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph)))
+    {
+        printf("[DI] SetProperty(AUTOCENTER) FAILED hr=0x%08X\n", hr);
         return hr;
+    }
+    printf("[DI] SetProperty(AUTOCENTER) OK\n");
 
     // Enumerate and count the axes of the joystick
     if (FAILED(hr = g_pFFDevice->EnumObjects(EnumAxesCallback,
                                              (VOID *)&g_dwNumForceFeedbackAxis, DIDFT_AXIS)))
+    {
+        printf("[DI] EnumObjects(axes) FAILED hr=0x%08X\n", hr);
         return hr;
+    }
+    printf("[DI] FFB axes found: %d\n", g_dwNumForceFeedbackAxis);
 
     // This simple sample only supports one or two axis joysticks
     if (g_dwNumForceFeedbackAxis > 2)
@@ -248,8 +267,10 @@ HRESULT InitDirectInput(HWND hCon)
 
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Damper, &eff, &g_pEffectDamper, NULL)))
     {
+        printf("[DI] CreateEffect(Damper) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Damper) OK\n");
     if (g_pEffectDamper)
         g_pEffectDamper->Start(1, 0);
 
@@ -269,8 +290,10 @@ HRESULT InitDirectInput(HWND hCon)
 
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Damper, &eff, &g_pEffectDamper2, NULL)))
     {
+        printf("[DI] CreateEffect(Damper2) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Damper2) OK\n");
 
     // Create Friction effect
     condition[ax1].dwNegativeSaturation = g_Opt.friction;
@@ -284,8 +307,10 @@ HRESULT InitDirectInput(HWND hCon)
     // eff.dwGain = g_Opt.friction;
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Friction, &eff, &g_pEffectFricti, NULL)))
     {
+        printf("[DI] CreateEffect(Friction) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Friction) OK\n");
     if (g_pEffectFricti)
         g_pEffectFricti->Start(1, 0);
 
@@ -301,8 +326,10 @@ HRESULT InitDirectInput(HWND hCon)
     // eff.dwGain = g_Opt.friction;
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Friction, &eff, &g_pEffectFricti2, NULL)))
     {
+        printf("[DI] CreateEffect(Friction2) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Friction2) OK\n");
 
     // Create Spring effect
     condition[ax1].dwNegativeSaturation = g_Opt.spring;
@@ -316,8 +343,10 @@ HRESULT InitDirectInput(HWND hCon)
     // eff.dwGain = g_Opt.spring;
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Spring, &eff, &g_pEffectSpring, NULL)))
     {
+        printf("[DI] CreateEffect(Spring) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Spring) OK\n");
 
     // Create Spring Effect 2
     condition[ax1].dwNegativeSaturation = g_Opt.spring2;
@@ -331,8 +360,10 @@ HRESULT InitDirectInput(HWND hCon)
 
     if (FAILED(hr = g_pFFDevice->CreateEffect(GUID_Spring, &eff, &g_pEffectSpring2, NULL)))
     {
+        printf("[DI] CreateEffect(Spring2) FAILED hr=0x%08X\n", hr);
         return hr;
     }
+    printf("[DI] CreateEffect(Spring2) OK\n");
 
     if (NULL == g_pEffectSpring)
         return E_FAIL;
@@ -364,11 +395,14 @@ HRESULT InitDirectInput(HWND hCon)
     eff.lpvTypeSpecificParams = &per;
     eff.dwStartDelay = 0;
     g_pFFDevice->CreateEffect(GUID_Sine, &eff, &g_pEffectShaker, NULL);
+    printf("[DI] CreateEffect(Shaker/Sine) g_pEffectShaker=%p\n", g_pEffectShaker);
 
     // Bump effect: sine wave at 8 Hz, magnitude=0 (off until on ground)
     per.dwPeriod = 125000; // microseconds = 8 Hz
     g_pFFDevice->CreateEffect(GUID_Sine, &eff, &g_pEffectBump, NULL);
+    printf("[DI] CreateEffect(Bump/Sine) g_pEffectBump=%p\n", g_pEffectBump);
 
+    printf("[DI] InitDirectInput complete\n");
     return S_OK;
 }
 
@@ -399,6 +433,9 @@ BOOL CALLBACK EnumFFDevicesCallback(const DIDEVICEINSTANCE *pInst,
     LPDIRECTINPUTDEVICE8 pDevice;
     HRESULT hr;
 
+    printf("[DI] EnumFFDevicesCallback: '%ls' guidFFDriver.Data1=0x%08X\n",
+           pInst->tszInstanceName, pInst->guidFFDriver.Data1);
+
     // Obtain an interface to the enumerated force feedback device.
     hr = g_pDI->CreateDevice(pInst->guidInstance, &pDevice, NULL);
 
@@ -406,15 +443,24 @@ BOOL CALLBACK EnumFFDevicesCallback(const DIDEVICEINSTANCE *pInst,
     // bizarre reason.  (Maybe the user unplugged it while we
     // were in the middle of enumerating it.)  So continue enumerating
     if (FAILED(hr))
+    {
+        printf("[DI]   CreateDevice FAILED hr=0x%08X, skipping\n", hr);
         return DIENUM_CONTINUE;
+    }
 
     // We successfully created an IDirectInputDevice8.
     _tcscpy_s(g_Sticks[g_iNsticks].name, MAX_PATH, pInst->tszInstanceName);
     g_Sticks[g_iNsticks].dev = pDevice;
-    if (pInst->guidFFDriver.Data1 != NULL)
+    if (pInst->guidFFDriver.Data1 != NULL && g_pFFDevice == NULL &&
+        _tcsstr(pInst->tszInstanceName, _T("vJoy")) == NULL)
     {
         g_iFF = g_iNsticks;
         g_pFFDevice = pDevice;
+        printf("[DI]   -> assigned as FFB device (stick index %d)\n", g_iNsticks);
+    }
+    else if (pInst->guidFFDriver.Data1 != NULL)
+    {
+        printf("[DI]   -> has FFB driver but skipping (vJoy or FFB device already assigned)\n");
     }
     g_iNsticks++;
     if (32 == g_iNsticks)
@@ -659,7 +705,7 @@ HRESULT SetDeviceSpring()
         lOY = max(-(INT)DI_FFNOMINALMAX, min(g_xplaneAeroY + 2.0f * scaledTrimY, (INT)DI_FFNOMINALMAX));
         INT lOX_raw = max(-(INT)DI_FFNOMINALMAX, min(g_xplaneAeroX + scaledTrimX, (INT)DI_FFNOMINALMAX));
         lOX = g_Opt.swap ? -lOX_raw : lOX_raw;
-        printf("lOY: %d, lOX: %d\n", lOY, lOX);
+        printf("lOY: %d, lOX: %d          \r", lOY, lOX);
     }
     else
     {
@@ -819,7 +865,10 @@ HRESULT Adquirir()
 {
     HRESULT hr;
     for (int i = 0; i < g_iNsticks; i++)
+    {
         hr = g_Sticks[i].dev->Acquire();
+        printf("[DI] Acquire stick[%d] ('%ls') hr=0x%08X\n", i, g_Sticks[i].name, hr);
+    }
     return 0;
 }
 
@@ -894,11 +943,28 @@ void ApplyArrowKeyTrim()
     if (0 == g_Opt.g_bSpring)
         return;
     bool any = false;
-    if (GetAsyncKeyState(VK_UP)    & 0x8000) { SUBLIM(g_nYForce, TRIMSTEP, -DI_FFNOMINALMAX); any = true; }
-    if (GetAsyncKeyState(VK_DOWN)  & 0x8000) { ADDLIM(g_nYForce, TRIMSTEP,  DI_FFNOMINALMAX); any = true; }
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) { ADDLIM(g_nXForce, TRIMSTEP,  DI_FFNOMINALMAX); any = true; }
-    if (GetAsyncKeyState(VK_LEFT)  & 0x8000) { SUBLIM(g_nXForce, TRIMSTEP, -DI_FFNOMINALMAX); any = true; }
-    if (any) SetDeviceSpring();
+    if (GetAsyncKeyState(VK_UP) & 0x8000)
+    {
+        SUBLIM(g_nYForce, TRIMSTEP, -DI_FFNOMINALMAX);
+        any = true;
+    }
+    if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+    {
+        ADDLIM(g_nYForce, TRIMSTEP, DI_FFNOMINALMAX);
+        any = true;
+    }
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+    {
+        ADDLIM(g_nXForce, TRIMSTEP, DI_FFNOMINALMAX);
+        any = true;
+    }
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+    {
+        SUBLIM(g_nXForce, TRIMSTEP, -DI_FFNOMINALMAX);
+        any = true;
+    }
+    if (any)
+        SetDeviceSpring();
 }
 
 void JoystickStuffPT() // PT -> progressive trimming
