@@ -1,4 +1,4 @@
-# simFFB-X-Plane
+# simFFB-X-Plane - Telemetry-Based Force Feedback for X-Plane
 ![simFFB](https://raw.githubusercontent.com/TF123456/simFFB-X-Plane/refs/heads/master/simffb_pic.png)
 
 ### Description
